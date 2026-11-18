@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,378 +6,104 @@
 <title>NO STRESS BRICK BREAKER</title>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#101426;color:#fff;
- font-family:Arial,sans-serif;text-align:center;
- padding:18px 10px 30px
-}
+body{margin:0;background:#101426;color:#fff;font-family:Arial,sans-serif;text-align:center;padding:18px 10px 30px}
 h1{font-size:clamp(22px,4vw,34px);margin:8px 0;color:#8ee8ff}
 .sub{color:#aab5d0;font-size:13px;margin-bottom:14px}
 .game{max-width:900px;margin:auto}
-.panel{
- display:flex;justify-content:center;align-items:center;
- gap:10px;flex-wrap:wrap;margin:12px auto
-}
-.stat{
- background:#202943;border:1px solid #354363;
- border-radius:10px;padding:9px 15px;min-width:90px
-}
+.panel{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;margin:12px auto}
+.stat{background:#202943;border:1px solid #354363;border-radius:10px;padding:9px 15px;min-width:90px}
 .stat small{display:block;color:#9eabc9;font-size:11px}
 .stat b{font-size:18px}
-button,select{
- border:0;border-radius:9px;padding:11px 16px;
- background:#30466f;color:white;font-weight:bold;
- cursor:pointer;font-size:14px
-}
+button,select{border:0;border-radius:9px;padding:11px 16px;background:#30466f;color:white;font-weight:bold;cursor:pointer;font-size:14px}
 button.primary{background:#16a6bd;color:#071722}
 button:hover{filter:brightness(1.15)}
-canvas{
- display:block;width:100%;height:auto;
- background:#151e35;border:2px solid #35496e;
- border-radius:12px;touch-action:none;
- box-shadow:0 8px 35px #0008
-}
+canvas{display:block;width:100%;height:auto;background:#151e35;border:2px solid #35496e;border-radius:12px;touch-action:none;box-shadow:0 8px 35px #0008}
 .help{color:#aab5d0;font-size:12px;line-height:1.8;margin:12px auto}
 .message{color:#8ee8ff;font-weight:bold;min-height:22px}
-@media(max-width:500px){
- body{padding:10px 7px}
- .stat{min-width:75px;padding:7px 9px}
- button,select{padding:10px 12px}
-}
+#language{background:#243553;min-width:145px}
+@media(max-width:500px){body{padding:10px 7px}.stat{min-width:75px;padding:7px 9px}button,select{padding:10px 12px}}
 </style>
 </head>
 <body>
 <div class="game">
 <h1>🧱 NO STRESS BRICK BREAKER</h1>
-<div class="sub">Relax, play and enjoy breaking bricks!</div>
-
+<div class="sub" data-i18n="subtitle">Relax, play and enjoy breaking bricks!</div>
 <div class="panel">
- <div class="stat"><small>SCORE</small><b id="score">0</b></div>
- <div class="stat"><small>BEST</small><b id="best">0</b></div>
- <div class="stat"><small>STAGE</small><b id="stage">1</b></div>
- <div class="stat"><small>LIVES</small><b id="lives">5</b></div>
+ <div class="stat"><small data-i18n="scoreLabel">SCORE</small><b id="score">0</b></div>
+ <div class="stat"><small data-i18n="bestLabel">BEST</small><b id="best">0</b></div>
+ <div class="stat"><small data-i18n="stageLabel">STAGE</small><b id="stage">1</b></div>
+ <div class="stat"><small data-i18n="livesLabel">LIVES</small><b id="lives">5</b></div>
 </div>
-
 <div class="panel">
- <select id="difficulty">
-  <option value="easy">Relax Mode</option>
-  <option value="normal">Normal Mode</option>
-  <option value="hard">Challenge Mode</option>
+ <select id="difficulty" aria-label="Difficulty">
+  <option value="easy" data-i18n="relaxMode">Relax Mode</option>
+  <option value="normal" data-i18n="normalMode">Normal Mode</option>
+  <option value="hard" data-i18n="challengeMode">Challenge Mode</option>
  </select>
- <button class="primary" id="start">▶ PLAY</button>
- <button id="pause">Ⅱ PAUSE</button>
- <button id="restart">↻ RESTART</button>
+ <select id="language" aria-label="Language">
+  <option value="en">🌐 English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">简体中文</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="pt">Português</option><option value="it">Italiano</option><option value="ru">Русский</option>
+ </select>
+ <button class="primary" id="start" data-i18n="play">▶ PLAY</button>
+ <button id="pause" data-i18n="pause">Ⅱ PAUSE</button>
+ <button id="restart" data-i18n="restart">↻ RESTART</button>
 </div>
-
 <canvas id="gameCanvas" width="900" height="600"></canvas>
 <div class="message" id="message">Press PLAY to start</div>
-<div class="help">
- Move: Mouse / Touch / ← → keys<br>
- Space: Launch ball · P: Pause<br>
- Catch falling power-ups with your paddle!
+<div class="help"><span data-i18n="moveHelp">Move: Mouse / Touch / ← → keys</span><br><span data-i18n="launchHelp">Space: Launch ball · P: Pause</span><br><span data-i18n="powerHelp">Catch falling power-ups with your paddle!</span></div>
 </div>
-</div>
-
 <script>
 (()=>{
-const canvas=document.getElementById("gameCanvas");
-const ctx=canvas.getContext("2d");
-const $=id=>document.getElementById(id);
-
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),$=id=>document.getElementById(id);
 const W=900,H=600;
-let score=0,stage=1,lives=5,best=0;
-let running=false,paused=false,launched=false;
-let balls=[],bricks=[],items=[];
-let lasers=[];
-let shield=0,wide=0,laser=0;
-let paddle={x:390,y:555,w:120,h:14};
-let keys={};
-let lastTime=0;
-let message="Press PLAY to start";
-let difficulty="easy";
-let baseSpeed=4.0;
-
-try{best=Number(localStorage.getItem("nsbb-best"))||0}catch(e){}
-$("best").textContent=best;
-
-function say(t){message=t;$("message").textContent=t}
-function updateStats(){
- $("score").textContent=score;
- $("best").textContent=best;
- $("stage").textContent=stage;
- $("lives").textContent=lives;
-}
-function settings(){
- difficulty=$("difficulty").value;
- baseSpeed=difficulty==="easy"?4.0:difficulty==="normal"?4.8:5.6;
- lives=difficulty==="easy"?5:difficulty==="normal"?4:3;
-}
-function newBall(){
- let speed=baseSpeed+Math.min(stage*.12,2);
- balls=[{x:W/2,y:520,vx:speed*.65,vy:-speed,r:9}];
- launched=false;
-}
-function makeBricks(){
- bricks=[];
- let rows=Math.min(5+Math.floor((stage-1)/2),8);
- let cols=10;
- let gap=7,bw=77,bh=24;
- let left=(W-(cols*bw+(cols-1)*gap))/2;
- const colors=["#ff7188","#ffb45e","#f6df70","#71dcae","#6dc9ff","#b69aff","#ff8bd4","#8ee8ff"];
- for(let r=0;r<rows;r++){
-  for(let c=0;c<cols;c++){
-   let tough=stage>=3&&r<Math.floor(stage/3);
-   bricks.push({
-    x:left+c*(bw+gap),y:65+r*(bh+gap),
-    w:bw,h:bh,hp:tough?2:1,max:tough?2:1,
-    color:colors[r%colors.length]
-   });
-  }
- }
-}
-function resetGame(){
- score=0;stage=1;settings();items=[];lasers=[];
- shield=0;wide=0;laser=0;
- paddle.w=120;paddle.x=(W-paddle.w)/2;
- makeBricks();newBall();running=true;paused=false;
- $("pause").textContent="Ⅱ PAUSE";
- updateStats();say("Good luck! Enjoy the game.");
-}
-function launch(){
- if(!running||paused)return;
- if(!launched){
-  launched=true;
-  say("Keep it relaxing!");
- }
-}
-function nextStage(){
- stage++;
- makeBricks();
- newBall();
- items=[];
- say("Stage "+stage+" — Nice work!");
- updateStats();
-}
-function loseLife(){
- lives--;updateStats();
- if(lives<=0){
-  running=false;launched=false;
-  say("Game over — Press RESTART to try again");
- }else{
-  newBall();
-  say("One more chance! Press PLAY to launch.");
- }
-}
-function dropItem(x,y){
- if(Math.random()>.20)return;
- const types=["wide","multi","shield","laser"];
- items.push({x,y,type:types[Math.floor(Math.random()*types.length)],vy:2.2});
-}
-function activate(type){
- if(type==="wide"){
-  wide=900;paddle.w=190;
-  say("✨ WIDE PADDLE!");
- }
- if(type==="multi"){
-  let source=balls[0];
-  if(source){
-   for(let i=0;i<2;i++){
-    balls.push({x:source.x,y:source.y,vx:source.vx*(i?-.8:.8),vy:source.vy,r:9});
-   }
-  }
-  say("⚡ MULTI BALL!");
- }
- if(type==="shield"){
-  shield=1;say("🛡️ SAFETY SHIELD!");
- }
- if(type==="laser"){
-  laser=900;say("🔫 LASER POWER!");
- }
-}
+const LANG={
+ en:{subtitle:"Relax, play and enjoy breaking bricks!",scoreLabel:"SCORE",bestLabel:"BEST",stageLabel:"STAGE",livesLabel:"LIVES",relaxMode:"Relax Mode",normalMode:"Normal Mode",challengeMode:"Challenge Mode",play:"▶ PLAY",pause:"Ⅱ PAUSE",resume:"▶ RESUME",restart:"↻ RESTART",ready:"Press PLAY to start",goodLuck:"Good luck! Enjoy the game.",relaxing:"Keep it relaxing!",stageMsg:"Stage {n} — Nice work!",gameOver:"Game over — Press RESTART to try again",oneChance:"One more chance! Press PLAY to launch.",wide:"✨ WIDE PADDLE!",multi:"⚡ MULTI BALL!",shield:"🛡️ SAFETY SHIELD!",laser:"🔫 LASER POWER!",shieldSaved:"Shield saved you!",paused:"Game paused",letsPlay:"Let's play!",gameOverTitle:"GAME OVER",pausedTitle:"PAUSED",readyTitle:"READY?",restartPrompt:"Press RESTART",resumePrompt:"Press PAUSE to continue",launchPrompt:"Press PLAY to launch",moveHelp:"Move: Mouse / Touch / ← → keys",launchHelp:"Space: Launch ball · P: Pause",powerHelp:"Catch falling power-ups with your paddle!",language:"Language"},
+ ko:{subtitle:"편안하게 즐기며 벽돌을 깨 보세요!",scoreLabel:"점수",bestLabel:"최고 점수",stageLabel:"단계",livesLabel:"목숨",relaxMode:"편안한 모드",normalMode:"일반 모드",challengeMode:"도전 모드",play:"▶ 시작",pause:"Ⅱ 일시정지",resume:"▶ 계속하기",restart:"↻ 다시 시작",ready:"시작 버튼을 눌러 플레이하세요",goodLuck:"행운을 빌어요! 편안하게 즐기세요.",relaxing:"여유롭게 즐겨 보세요!",stageMsg:"{n}단계 — 잘했어요!",gameOver:"게임 종료 — 다시 시작을 눌러 도전하세요",oneChance:"한 번 더 기회가 있어요! 시작을 눌러 공을 발사하세요.",wide:"✨ 패들이 넓어졌어요!",multi:"⚡ 멀티 볼!",shield:"🛡️ 안전 보호막!",laser:"🔫 레이저 발사!",shieldSaved:"보호막이 구해 줬어요!",paused:"게임 일시정지",letsPlay:"다시 플레이해요!",gameOverTitle:"게임 종료",pausedTitle:"일시정지",readyTitle:"준비됐나요?",restartPrompt:"다시 시작을 누르세요",resumePrompt:"일시정지 버튼을 눌러 계속하세요",launchPrompt:"시작을 눌러 공을 발사하세요",moveHelp:"이동: 마우스 / 터치 / ← → 방향키",launchHelp:"스페이스바: 공 발사 · P: 일시정지",powerHelp:"패들로 떨어지는 파워업을 받아 보세요!",language:"언어"},
+ ja:{subtitle:"リラックスしてブロック崩しを楽しもう！",scoreLabel:"スコア",bestLabel:"ベスト",stageLabel:"ステージ",livesLabel:"ライフ",relaxMode:"リラックスモード",normalMode:"ノーマルモード",challengeMode:"チャレンジモード",play:"▶ プレイ",pause:"Ⅱ 一時停止",resume:"▶ 再開",restart:"↻ リスタート",ready:"プレイを押して開始",goodLuck:"頑張って！ゆっくり楽しんでね。",relaxing:"リラックスして続けよう！",stageMsg:"ステージ{n} — お見事！",gameOver:"ゲームオーバー — リスタートして再挑戦",oneChance:"もう一度チャンス！プレイを押して発射。",wide:"✨ パドル拡大！",multi:"⚡ マルチボール！",shield:"🛡️ シールド！",laser:"🔫 レーザー！",shieldSaved:"シールドが守ってくれた！",paused:"一時停止中",letsPlay:"さあ、プレイしよう！",gameOverTitle:"ゲームオーバー",pausedTitle:"一時停止",readyTitle:"準備はいい？",restartPrompt:"リスタートを押してください",resumePrompt:"一時停止を押して再開",launchPrompt:"プレイを押して発射",moveHelp:"操作：マウス / タッチ / ← → キー",launchHelp:"スペース：ボール発射 · P：一時停止",powerHelp:"パドルで落ちてくるアイテムをキャッチ！",language:"言語"},
+ zh:{subtitle:"放松心情，享受打砖块的乐趣！",scoreLabel:"分数",bestLabel:"最高分",stageLabel:"关卡",livesLabel:"生命",relaxMode:"轻松模式",normalMode:"普通模式",challengeMode:"挑战模式",play:"▶ 开始",pause:"Ⅱ 暂停",resume:"▶ 继续",restart:"↻ 重新开始",ready:"点击开始按钮进入游戏",goodLuck:"祝你好运！尽情放松游戏吧。",relaxing:"放轻松，继续享受！",stageMsg:"第 {n} 关 — 干得漂亮！",gameOver:"游戏结束 — 点击重新开始再试一次",oneChance:"还有一次机会！点击开始发射球。",wide:"✨ 加宽挡板！",multi:"⚡ 多球模式！",shield:"🛡️ 防护盾！",laser:"🔫 激光能力！",shieldSaved:"护盾救了你！",paused:"游戏已暂停",letsPlay:"继续游戏吧！",gameOverTitle:"游戏结束",pausedTitle:"已暂停",readyTitle:"准备好了吗？",restartPrompt:"点击重新开始",resumePrompt:"点击暂停按钮继续",launchPrompt:"点击开始发射球",moveHelp:"移动：鼠标 / 触屏 / ← → 方向键",launchHelp:"空格键：发射球 · P：暂停",powerHelp:"用挡板接住掉落的强化道具！",language:"语言"},
+ es:{subtitle:"¡Relájate y disfruta rompiendo ladrillos!",scoreLabel:"PUNTOS",bestLabel:"RÉCORD",stageLabel:"FASE",livesLabel:"VIDAS",relaxMode:"Modo relajado",normalMode:"Modo normal",challengeMode:"Modo desafío",play:"▶ JUGAR",pause:"Ⅱ PAUSA",resume:"▶ CONTINUAR",restart:"↻ REINICIAR",ready:"Pulsa JUGAR para empezar",goodLuck:"¡Buena suerte! Disfruta con calma.",relaxing:"¡Sigue disfrutando sin prisas!",stageMsg:"Fase {n} — ¡Buen trabajo!",gameOver:"Fin del juego — Pulsa REINICIAR para intentarlo",oneChance:"¡Una oportunidad más! Pulsa JUGAR para lanzar.",wide:"✨ ¡PALA MÁS ANCHA!",multi:"⚡ ¡MULTIBOLA!",shield:"🛡️ ¡ESCUDO!",laser:"🔫 ¡LÁSER!",shieldSaved:"¡El escudo te ha salvado!",paused:"Juego en pausa",letsPlay:"¡A jugar!",gameOverTitle:"FIN DEL JUEGO",pausedTitle:"EN PAUSA",readyTitle:"¿PREPARADO?",restartPrompt:"Pulsa REINICIAR",resumePrompt:"Pulsa PAUSA para continuar",launchPrompt:"Pulsa JUGAR para lanzar",moveHelp:"Mover: ratón / pantalla táctil / teclas ← →",launchHelp:"Espacio: lanzar bola · P: pausa",powerHelp:"¡Atrapa las mejoras con la pala!",language:"Idioma"},
+ fr:{subtitle:"Détendez-vous et amusez-vous à casser des briques !",scoreLabel:"SCORE",bestLabel:"RECORD",stageLabel:"NIVEAU",livesLabel:"VIES",relaxMode:"Mode détente",normalMode:"Mode normal",challengeMode:"Mode défi",play:"▶ JOUER",pause:"Ⅱ PAUSE",resume:"▶ REPRENDRE",restart:"↻ RECOMMENCER",ready:"Appuyez sur JOUER pour commencer",goodLuck:"Bonne chance ! Amusez-vous tranquillement.",relaxing:"Continuez à jouer sans pression !",stageMsg:"Niveau {n} — Beau travail !",gameOver:"Partie terminée — Appuyez sur RECOMMENCER",oneChance:"Encore une chance ! Appuyez sur JOUER pour lancer.",wide:"✨ RAQUETTE ÉLARGIE !",multi:"⚡ MULTI-BALLES !",shield:"🛡️ BOUCLIER !",laser:"🔫 LASER !",shieldSaved:"Le bouclier vous a sauvé !",paused:"Jeu en pause",letsPlay:"C'est parti !",gameOverTitle:"FIN DE PARTIE",pausedTitle:"EN PAUSE",readyTitle:"PRÊT ?",restartPrompt:"Appuyez sur RECOMMENCER",resumePrompt:"Appuyez sur PAUSE pour continuer",launchPrompt:"Appuyez sur JOUER pour lancer",moveHelp:"Déplacement : souris / tactile / touches ← →",launchHelp:"Espace : lancer la balle · P : pause",powerHelp:"Attrapez les bonus avec votre raquette !",language:"Langue"},
+ de:{subtitle:"Entspanne dich und hab Spaß beim Ziegelzerstören!",scoreLabel:"PUNKTE",bestLabel:"REKORD",stageLabel:"STUFE",livesLabel:"LEBEN",relaxMode:"Entspannungsmodus",normalMode:"Normalmodus",challengeMode:"Herausforderungsmodus",play:"▶ SPIELEN",pause:"Ⅱ PAUSE",resume:"▶ WEITER",restart:"↻ NEUSTART",ready:"Drücke SPIELEN zum Starten",goodLuck:"Viel Glück! Viel Spaß beim entspannten Spielen.",relaxing:"Ganz entspannt weiterspielen!",stageMsg:"Stufe {n} — Gut gemacht!",gameOver:"Spiel vorbei — Drücke NEUSTART für einen neuen Versuch",oneChance:"Noch eine Chance! Drücke SPIELEN zum Start.",wide:"✨ BREITER SCHLÄGER!",multi:"⚡ MULTIBALL!",shield:"🛡️ SCHUTZSCHILD!",laser:"🔫 LASERPOWER!",shieldSaved:"Der Schild hat dich gerettet!",paused:"Spiel pausiert",letsPlay:"Weiter geht's!",gameOverTitle:"SPIEL VORBEI",pausedTitle:"PAUSE",readyTitle:"BEREIT?",restartPrompt:"Drücke NEUSTART",resumePrompt:"Drücke PAUSE zum Fortfahren",launchPrompt:"Drücke SPIELEN zum Start",moveHelp:"Bewegen: Maus / Touch / ← → Tasten",launchHelp:"Leertaste: Ball starten · P: Pause",powerHelp:"Fange fallende Extras mit deinem Schläger!",language:"Sprache"},
+ pt:{subtitle:"Relaxe e divirta-se quebrando tijolos!",scoreLabel:"PONTOS",bestLabel:"RECORDE",stageLabel:"FASE",livesLabel:"VIDAS",relaxMode:"Modo relaxante",normalMode:"Modo normal",challengeMode:"Modo desafio",play:"▶ JOGAR",pause:"Ⅱ PAUSAR",resume:"▶ CONTINUAR",restart:"↻ REINICIAR",ready:"Pressione JOGAR para começar",goodLuck:"Boa sorte! Aproveite o jogo com calma.",relaxing:"Continue jogando sem pressa!",stageMsg:"Fase {n} — Muito bem!",gameOver:"Fim de jogo — Pressione REINICIAR para tentar novamente",oneChance:"Mais uma chance! Pressione JOGAR para lançar.",wide:"✨ RAQUETE MAIOR!",multi:"⚡ MULTIBOLA!",shield:"🛡️ ESCUDO!",laser:"🔫 LASER!",shieldSaved:"O escudo salvou você!",paused:"Jogo pausado",letsPlay:"Vamos jogar!",gameOverTitle:"FIM DE JOGO",pausedTitle:"PAUSADO",readyTitle:"PRONTO?",restartPrompt:"Pressione REINICIAR",resumePrompt:"Pressione PAUSAR para continuar",launchPrompt:"Pressione JOGAR para lançar",moveHelp:"Mover: mouse / toque / teclas ← →",launchHelp:"Espaço: lançar bola · P: pausar",powerHelp:"Pegue os poderes que caem usando a raquete!",language:"Idioma"},
+ it:{subtitle:"Rilassati e divertiti a rompere i mattoni!",scoreLabel:"PUNTEGGIO",bestLabel:"RECORD",stageLabel:"LIVELLO",livesLabel:"VITE",relaxMode:"Modalità relax",normalMode:"Modalità normale",challengeMode:"Modalità sfida",play:"▶ GIOCA",pause:"Ⅱ PAUSA",resume:"▶ RIPRENDI",restart:"↻ RICOMINCIA",ready:"Premi GIOCA per iniziare",goodLuck:"Buona fortuna! Goditi il gioco senza fretta.",relaxing:"Continua a divertirti con calma!",stageMsg:"Livello {n} — Ottimo lavoro!",gameOver:"Partita finita — Premi RICOMINCIA per riprovare",oneChance:"Un'altra possibilità! Premi GIOCA per lanciare.",wide:"✨ RACCHETTA PIÙ LARGA!",multi:"⚡ MULTI-PALLA!",shield:"🛡️ SCUDO!",laser:"🔫 LASER!",shieldSaved:"Lo scudo ti ha salvato!",paused:"Gioco in pausa",letsPlay:"Si gioca!",gameOverTitle:"FINE PARTITA",pausedTitle:"IN PAUSA",readyTitle:"PRONTO?",restartPrompt:"Premi RICOMINCIA",resumePrompt:"Premi PAUSA per continuare",launchPrompt:"Premi GIOCA per lanciare",moveHelp:"Muovi: mouse / tocco / tasti ← →",launchHelp:"Spazio: lancia la palla · P: pausa",powerHelp:"Raccogli i potenziamenti con la racchetta!",language:"Lingua"},
+ ru:{subtitle:"Расслабьтесь и получайте удовольствие, разбивая кирпичи!",scoreLabel:"СЧЁТ",bestLabel:"РЕКОРД",stageLabel:"ЭТАП",livesLabel:"ЖИЗНИ",relaxMode:"Спокойный режим",normalMode:"Обычный режим",challengeMode:"Режим испытания",play:"▶ ИГРАТЬ",pause:"Ⅱ ПАУЗА",resume:"▶ ПРОДОЛЖИТЬ",restart:"↻ ЗАНОВО",ready:"Нажмите ИГРАТЬ, чтобы начать",goodLuck:"Удачи! Играйте в своё удовольствие.",relaxing:"Играйте спокойно, без спешки!",stageMsg:"Этап {n} — Отличная работа!",gameOver:"Игра окончена — нажмите ЗАНОВО, чтобы попробовать ещё раз",oneChance:"Ещё один шанс! Нажмите ИГРАТЬ, чтобы запустить мяч.",wide:"✨ ШИРОКАЯ ПЛАТФОРМА!",multi:"⚡ МУЛЬТИМЯЧ!",shield:"🛡️ ЗАЩИТНЫЙ ЩИТ!",laser:"🔫 ЛАЗЕР!",shieldSaved:"Щит спас вас!",paused:"Игра на паузе",letsPlay:"Продолжаем играть!",gameOverTitle:"ИГРА ОКОНЧЕНА",pausedTitle:"ПАУЗА",readyTitle:"ГОТОВЫ?",restartPrompt:"Нажмите ЗАНОВО",resumePrompt:"Нажмите ПАУЗА, чтобы продолжить",launchPrompt:"Нажмите ИГРАТЬ, чтобы запустить мяч",moveHelp:"Движение: мышь / касание / клавиши ← →",launchHelp:"Пробел: запустить мяч · P: пауза",powerHelp:"Ловите падающие бонусы платформой!",language:"Язык"}
+};
+const LANG_KEY="nostressLanguage";let currentLanguage="en";
+function detectLanguage(){const prefs=(navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||"en"]).map(v=>String(v).toLowerCase());for(const v of prefs){if(v.startsWith("zh"))return "zh";for(const code of ["en","ko","ja","es","fr","de","pt","it","ru"])if(v.startsWith(code))return code;}return "en"}
+function tr(key,vars={}){let s=(LANG[currentLanguage]&&LANG[currentLanguage][key])||LANG.en[key]||key;return s.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??"")}
+function applyLanguage(code,save=true){currentLanguage=LANG[code]?code:"en";document.documentElement.lang=currentLanguage;document.querySelectorAll("[data-i18n]").forEach(el=>{const key=el.dataset.i18n;el.textContent=tr(key)});$("language").value=currentLanguage;const pauseKey=paused?"resume":"pause";$("pause").textContent=tr(pauseKey);if(save){try{localStorage.setItem(LANG_KEY,currentLanguage)}catch(e){}}say(messageKey,messageVars)}
+let score=0,stage=1,lives=5,best=0,running=false,paused=false,launched=false;
+let balls=[],bricks=[],items=[],lasers=[];let shield=0,wide=0,laser=0;
+let paddle={x:390,y:555,w:120,h:14},keys={},lastTime=0,messageKey="ready",messageVars={},difficulty="easy",baseSpeed=4.0;
+try{best=Number(localStorage.getItem("nsbb-best"))||0}catch(e){}$("best").textContent=best;
+function say(key,vars={}){messageKey=key;messageVars=vars;$("message").textContent=tr(key,vars)}
+function updateStats(){$("score").textContent=score;$("best").textContent=best;$("stage").textContent=stage;$("lives").textContent=lives}
+function settings(){difficulty=$("difficulty").value;baseSpeed=difficulty==="easy"?4.0:difficulty==="normal"?4.8:5.6;lives=difficulty==="easy"?5:difficulty==="normal"?4:3}
+function newBall(){let speed=baseSpeed+Math.min(stage*.12,2);balls=[{x:W/2,y:520,vx:speed*.65,vy:-speed,r:9}];launched=false}
+function makeBricks(){bricks=[];let rows=Math.min(5+Math.floor((stage-1)/2),8),cols=10,gap=7,bw=77,bh=24,left=(W-(cols*bw+(cols-1)*gap))/2;const colors=["#ff7188","#ffb45e","#f6df70","#71dcae","#6dc9ff","#b69aff","#ff8bd4","#8ee8ff"];for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){let tough=stage>=3&&r<Math.floor(stage/3);bricks.push({x:left+c*(bw+gap),y:65+r*(bh+gap),w:bw,h:bh,hp:tough?2:1,max:tough?2:1,color:colors[r%colors.length]})}}
+function resetGame(){score=0;stage=1;settings();items=[];lasers=[];shield=0;wide=0;laser=0;paddle.w=120;paddle.x=(W-paddle.w)/2;makeBricks();newBall();running=true;paused=false;$("pause").textContent=tr("pause");updateStats();say("goodLuck")}
+function launch(){if(!running||paused)return;if(!launched){launched=true;say("relaxing")}}
+function nextStage(){stage++;makeBricks();newBall();items=[];say("stageMsg",{n:stage});updateStats()}
+function loseLife(){lives--;updateStats();if(lives<=0){running=false;launched=false;say("gameOver")}else{newBall();say("oneChance")}}
+function dropItem(x,y){if(Math.random()>.20)return;const types=["wide","multi","shield","laser"];items.push({x,y,type:types[Math.floor(Math.random()*types.length)],vy:2.2})}
+function activate(type){if(type==="wide"){wide=900;paddle.w=190;say("wide")}if(type==="multi"){let source=balls[0];if(source)for(let i=0;i<2;i++)balls.push({x:source.x,y:source.y,vx:source.vx*(i?-.8:.8),vy:source.vy,r:9});say("multi")}if(type==="shield"){shield=1;say("shield")}if(type==="laser"){laser=900;say("laser")}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function hitRect(ball,rect){
- return ball.x+ball.r>rect.x&&ball.x-ball.r<rect.x+rect.w&&
- ball.y+ball.r>rect.y&&ball.y-ball.r<rect.y+rect.h;
-}
-function update(dt){
- if(!running||paused)return;
- let step=Math.min(dt/16.67,2);
-
- if(keys.ArrowLeft||keys.a)paddle.x-=7*step;
- if(keys.ArrowRight||keys.d)paddle.x+=7*step;
- paddle.x=clamp(paddle.x,0,W-paddle.w);
-
- if(!launched){
-  balls[0].x=paddle.x+paddle.w/2;
-  balls[0].y=paddle.y-12;
- }
- if(wide>0){wide-=dt;if(wide<=0)paddle.w=120}
- if(laser>0)laser-=dt;
-
- for(let b of balls){
-  if(!launched)continue;
-  b.x+=b.vx*step;b.y+=b.vy*step;
-
-  if(b.x-b.r<0){b.x=b.r;b.vx=Math.abs(b.vx)}
-  if(b.x+b.r>W){b.x=W-b.r;b.vx=-Math.abs(b.vx)}
-  if(b.y-b.r<0){b.y=b.r;b.vy=Math.abs(b.vy)}
-
-  if(b.vy>0&&hitRect(b,paddle)){
-   b.y=paddle.y-b.r;
-   let hit=(b.x-(paddle.x+paddle.w/2))/(paddle.w/2);
-   b.vx=hit*baseSpeed*1.35;
-   b.vy=-Math.sqrt(Math.max(5,baseSpeed*baseSpeed-b.vx*b.vx*.45));
-  }
-
-  for(let br of bricks){
-   if(br.hp>0&&hitRect(b,br)){
-    br.hp--;
-    score+=10;
-    if(br.hp===0)dropItem(br.x+br.w/2,br.y+br.h/2);
-    b.vy*=-1;
-    break;
-   }
-  }
- }
- balls=balls.filter(b=>b.y-b.r<H+10);
- if(launched&&balls.length===0){
-  if(shield){
-   shield=0;newBall();say("Shield saved you!");
-  }else loseLife();
- }
-
- for(let item of items){
-  item.y+=item.vy*step;
-  if(item.y+10>=paddle.y&&item.y<=paddle.y+paddle.h&&
-     item.x>=paddle.x&&item.x<=paddle.x+paddle.w){
-   activate(item.type);item.caught=true;
-  }
- }
- items=items.filter(i=>!i.caught&&i.y<H+20);
-
- if(laser>0&&launched&&Math.random()<.12*step){
-  lasers.push({x:paddle.x+paddle.w*.3,y:paddle.y,vy:-9});
-  lasers.push({x:paddle.x+paddle.w*.7,y:paddle.y,vy:-9});
- }
- for(let l of lasers){
-  l.y+=l.vy*step;
-  for(let br of bricks){
-   if(br.hp>0&&l.x>br.x&&l.x<br.x+br.w&&l.y>br.y&&l.y<br.y+br.h){
-    br.hp--;score+=10;l.hit=true;
-    if(br.hp===0)dropItem(br.x+br.w/2,br.y+br.h/2);
-    break;
-   }
-  }
- }
- lasers=lasers.filter(l=>!l.hit&&l.y>0);
-
- if(bricks.every(b=>b.hp<=0))nextStage();
-
- if(score>best){
-  best=score;
-  try{localStorage.setItem("nsbb-best",best)}catch(e){}
- }
- updateStats();
-}
-function draw(){
- ctx.clearRect(0,0,W,H);
- let grad=ctx.createLinearGradient(0,0,0,H);
- grad.addColorStop(0,"#192541");
- grad.addColorStop(1,"#11182c");
- ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-
- ctx.strokeStyle="#ffffff0b";ctx.lineWidth=1;
- for(let x=0;x<W;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
-
- for(let br of bricks){
-  if(br.hp<=0)continue;
-  ctx.fillStyle=br.color;
-  ctx.beginPath();ctx.roundRect(br.x,br.y,br.w,br.h,6);ctx.fill();
-  ctx.fillStyle="#ffffff30";
-  ctx.fillRect(br.x+5,br.y+4,br.w-10,3);
-  if(br.max>1){
-   ctx.fillStyle="#17213b";ctx.font="bold 12px Arial";
-   ctx.fillText(br.hp,br.x+br.w/2-3,br.y+17);
-  }
- }
- ctx.fillStyle="#6fe2ff";
- ctx.beginPath();ctx.roundRect(paddle.x,paddle.y,paddle.w,paddle.h,8);ctx.fill();
- ctx.fillStyle="#ffffff70";
- ctx.fillRect(paddle.x+8,paddle.y+3,paddle.w-16,3);
-
- if(shield){
-  ctx.strokeStyle="#66eaff";ctx.lineWidth=5;
-  ctx.beginPath();ctx.moveTo(0,590);ctx.lineTo(W,590);ctx.stroke();
- }
- for(let b of balls){
-  ctx.shadowColor="#fff";ctx.shadowBlur=15;
-  ctx.fillStyle="#fff";
-  ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
-  ctx.shadowBlur=0;
- }
- const icons={wide:"↔",multi:"✦",shield:"🛡",laser:"⚡"};
- const colors={wide:"#56d9ff",multi:"#ffdb69",shield:"#8df2bd",laser:"#ff8ad2"};
- for(let i of items){
-  ctx.fillStyle=colors[i.type];
-  ctx.beginPath();ctx.arc(i.x,i.y,13,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#17213b";ctx.font="bold 14px Arial";
-  ctx.textAlign="center";ctx.fillText(icons[i.type],i.x,i.y+5);
- }
- ctx.fillStyle="#ffb2d2";
- for(let l of lasers)ctx.fillRect(l.x-2,l.y,4,13);
-
- if(!running||paused||!launched){
-  ctx.fillStyle="#080d1c99";ctx.fillRect(0,0,W,H);
-  ctx.textAlign="center";ctx.fillStyle="#fff";
-  ctx.font="bold 32px Arial";
-  let title=!running?"GAME OVER":paused?"PAUSED":"READY?";
-  ctx.fillText(title,W/2,H/2-10);
-  ctx.font="18px Arial";ctx.fillStyle="#b9c8e8";
-  ctx.fillText(!running?"Press RESTART":paused?"Press PAUSE to continue":"Press PLAY to launch",W/2,H/2+28);
- }
-}
-function frame(t){
- let dt=lastTime?Math.min(t-lastTime,40):16.67;
- lastTime=t;update(dt);draw();
- requestAnimationFrame(frame);
-}
-function pointerMove(e){
- let rect=canvas.getBoundingClientRect();
- let x=(e.clientX-rect.left)/rect.width*W;
- paddle.x=clamp(x-paddle.w/2,0,W-paddle.w);
-}
-canvas.addEventListener("pointermove",pointerMove);
-canvas.addEventListener("pointerdown",e=>{
- pointerMove(e);
- if(running&&!paused&&!launched)launch();
-});
-$("start").onclick=()=>{
- if(!running){resetGame();launch()}
- else if(!paused)launch();
-};
-$("pause").onclick=()=>{
- if(!running)return;
- paused=!paused;
- $("pause").textContent=paused?"▶ RESUME":"Ⅱ PAUSE";
- say(paused?"Game paused":"Let's play!");
-};
-$("restart").onclick=resetGame;
-$("difficulty").onchange=()=>{
- if(!running||!launched)resetGame();
-};
-document.addEventListener("keydown",e=>{
- if(["ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key===" "){
-  keys[e.key]=true;
- }
- if(e.key==="a"||e.key==="d")keys[e.key]=true;
- if(e.key===" "&&running&&!paused)launch();
- if(e.key.toLowerCase()==="p"&&running)$("pause").click();
-});
-document.addEventListener("keyup",e=>{keys[e.key]=false});
-window.addEventListener("blur",()=>{keys={}});
-settings();makeBricks();newBall();updateStats();
-requestAnimationFrame(frame);
+function hitRect(ball,rect){return ball.x+ball.r>rect.x&&ball.x-ball.r<rect.x+rect.w&&ball.y+ball.r>rect.y&&ball.y-ball.r<rect.y+rect.h}
+function update(dt){if(!running||paused)return;let step=Math.min(dt/16.67,2);if(keys.ArrowLeft||keys.a)paddle.x-=7*step;if(keys.ArrowRight||keys.d)paddle.x+=7*step;paddle.x=clamp(paddle.x,0,W-paddle.w);if(!launched){balls[0].x=paddle.x+paddle.w/2;balls[0].y=paddle.y-12}if(wide>0){wide-=dt;if(wide<=0)paddle.w=120}if(laser>0)laser-=dt;
+for(let b of balls){if(!launched)continue;b.x+=b.vx*step;b.y+=b.vy*step;if(b.x-b.r<0){b.x=b.r;b.vx=Math.abs(b.vx)}if(b.x+b.r>W){b.x=W-b.r;b.vx=-Math.abs(b.vx)}if(b.y-b.r<0){b.y=b.r;b.vy=Math.abs(b.vy)}if(b.vy>0&&hitRect(b,paddle)){b.y=paddle.y-b.r;let hit=(b.x-(paddle.x+paddle.w/2))/(paddle.w/2);b.vx=hit*baseSpeed*1.35;b.vy=-Math.sqrt(Math.max(5,baseSpeed*baseSpeed-b.vx*b.vx*.45))}for(let br of bricks)if(br.hp>0&&hitRect(b,br)){br.hp--;score+=10;if(br.hp===0)dropItem(br.x+br.w/2,br.y+br.h/2);b.vy*=-1;break}}
+balls=balls.filter(b=>b.y-b.r<H+10);if(launched&&balls.length===0){if(shield){shield=0;newBall();say("shieldSaved")}else loseLife()}
+for(let item of items){item.y+=item.vy*step;if(item.y+10>=paddle.y&&item.y<=paddle.y+paddle.h&&item.x>=paddle.x&&item.x<=paddle.x+paddle.w){activate(item.type);item.caught=true}}items=items.filter(i=>!i.caught&&i.y<H+20);
+if(laser>0&&launched&&Math.random()<.12*step){lasers.push({x:paddle.x+paddle.w*.3,y:paddle.y,vy:-9});lasers.push({x:paddle.x+paddle.w*.7,y:paddle.y,vy:-9})}for(let l of lasers){l.y+=l.vy*step;for(let br of bricks)if(br.hp>0&&l.x>br.x&&l.x<br.x+br.w&&l.y>br.y&&l.y<br.y+br.h){br.hp--;score+=10;l.hit=true;if(br.hp===0)dropItem(br.x+br.w/2,br.y+br.h/2);break}}lasers=lasers.filter(l=>!l.hit&&l.y>0);if(bricks.every(b=>b.hp<=0))nextStage();if(score>best){best=score;try{localStorage.setItem("nsbb-best",best)}catch(e){}}updateStats()}
+function draw(){ctx.clearRect(0,0,W,H);let grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,"#192541");grad.addColorStop(1,"#11182c");ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);ctx.strokeStyle="#ffffff0b";ctx.lineWidth=1;for(let x=0;x<W;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+for(let br of bricks){if(br.hp<=0)continue;ctx.fillStyle=br.color;ctx.beginPath();ctx.roundRect(br.x,br.y,br.w,br.h,6);ctx.fill();ctx.fillStyle="#ffffff30";ctx.fillRect(br.x+5,br.y+4,br.w-10,3);if(br.max>1){ctx.fillStyle="#17213b";ctx.font="bold 12px Arial";ctx.fillText(br.hp,br.x+br.w/2-3,br.y+17)}}
+ctx.fillStyle="#6fe2ff";ctx.beginPath();ctx.roundRect(paddle.x,paddle.y,paddle.w,paddle.h,8);ctx.fill();ctx.fillStyle="#ffffff70";ctx.fillRect(paddle.x+8,paddle.y+3,paddle.w-16,3);if(shield){ctx.strokeStyle="#66eaff";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(0,590);ctx.lineTo(W,590);ctx.stroke()}for(let b of balls){ctx.shadowColor="#fff";ctx.shadowBlur=15;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0}
+const icons={wide:"↔",multi:"✦",shield:"🛡",laser:"⚡"},colors={wide:"#56d9ff",multi:"#ffdb69",shield:"#8df2bd",laser:"#ff8ad2"};for(let i of items){ctx.fillStyle=colors[i.type];ctx.beginPath();ctx.arc(i.x,i.y,13,0,Math.PI*2);ctx.fill();ctx.fillStyle="#17213b";ctx.font="bold 14px Arial";ctx.textAlign="center";ctx.fillText(icons[i.type],i.x,i.y+5)}ctx.fillStyle="#ffb2d2";for(let l of lasers)ctx.fillRect(l.x-2,l.y,4,13);
+if(!running||paused||!launched){ctx.fillStyle="#080d1c99";ctx.fillRect(0,0,W,H);ctx.textAlign="center";ctx.fillStyle="#fff";ctx.font="bold 32px Arial";let title=!running?tr("gameOverTitle"):paused?tr("pausedTitle"):tr("readyTitle");ctx.fillText(title,W/2,H/2-10);ctx.font="18px Arial";ctx.fillStyle="#b9c8e8";ctx.fillText(!running?tr("restartPrompt"):paused?tr("resumePrompt"):tr("launchPrompt"),W/2,H/2+28)}}
+function frame(t){let dt=lastTime?Math.min(t-lastTime,40):16.67;lastTime=t;update(dt);draw();requestAnimationFrame(frame)}
+function pointerMove(e){let rect=canvas.getBoundingClientRect(),x=(e.clientX-rect.left)/rect.width*W;paddle.x=clamp(x-paddle.w/2,0,W-paddle.w)}
+canvas.addEventListener("pointermove",pointerMove);canvas.addEventListener("pointerdown",e=>{pointerMove(e);if(running&&!paused&&!launched)launch()});
+$("start").onclick=()=>{if(!running){resetGame();launch()}else if(!paused)launch()};$("pause").onclick=()=>{if(!running)return;paused=!paused;$("pause").textContent=tr(paused?"resume":"pause");say(paused?"paused":"letsPlay")};$("restart").onclick=resetGame;$("difficulty").onchange=()=>{if(!running||!launched)resetGame()};$("language").onchange=e=>applyLanguage(e.target.value);
+document.addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();if(e.key==="ArrowLeft"||e.key==="ArrowRight"||e.key===" ")keys[e.key]=true;if(e.key==="a"||e.key==="d")keys[e.key]=true;if(e.key===" "&&running&&!paused)launch();if(e.key.toLowerCase()==="p"&&running)$("pause").click()});document.addEventListener("keyup",e=>{keys[e.key]=false});window.addEventListener("blur",()=>{keys={}});
+settings();makeBricks();newBall();updateStats();let saved=null;try{saved=localStorage.getItem(LANG_KEY)}catch(e){}applyLanguage(saved&&LANG[saved]?saved:detectLanguage(),!saved);say("ready");requestAnimationFrame(frame);
 })();
 </script>
 </body>
